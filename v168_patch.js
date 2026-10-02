@@ -71,41 +71,11 @@ window.addEventListener('resize',v168Resize,{passive:true});window.addEventListe
 })();
 
 
-// V171: mobile camera drag + full viewport/orientation repair
-(function v171MobileViewportAndLook(){
-  const canvas=renderer?.domElement;
-  if(!canvas||canvas.dataset.v171Bound)return;
-  canvas.dataset.v171Bound='1';
-  let lookId=null,lastX=0,lastY=0;
-  canvas.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse'||!started||isCutsceneInputLocked())return;
-    const el=document.elementFromPoint(e.clientX,e.clientY);
-    if(el?.closest?.('#mobileControls,#v168Chat,#chatPanel,#hud,#startOverlay,#signupGate'))return;
-    lookId=e.pointerId;lastX=e.clientX;lastY=e.clientY;
-    try{canvas.setPointerCapture(e.pointerId)}catch(_){}
-    e.preventDefault();
-  },{passive:false});
-  canvas.addEventListener('pointermove',e=>{
-    if(e.pointerId!==lookId||isCutsceneInputLocked())return;
-    const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;
-    yaw-=dx*.0062; pitch=Math.max(-1.35,Math.min(1.35,pitch+dy*.0055));
-    if(shiftLock)targetPlayerYaw=yaw;
-    e.preventDefault();
-  },{passive:false});
-  const end=e=>{if(e.pointerId===lookId)lookId=null};
-  canvas.addEventListener('pointerup',end,{passive:true});canvas.addEventListener('pointercancel',end,{passive:true});
-
-  function fit(){
-    try{
-      const w=Math.max(document.documentElement.clientWidth||0,window.innerWidth||0);
-      const h=Math.max(document.documentElement.clientHeight||0,window.innerHeight||0);
-      renderer.domElement.style.position='fixed';renderer.domElement.style.inset='0';
-      renderer.domElement.style.width=w+'px';renderer.domElement.style.height=h+'px';
-      renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
-    }catch(_){}
-  }
-  window.addEventListener('resize',()=>requestAnimationFrame(fit),{passive:true});
-  window.addEventListener('orientationchange',()=>{setTimeout(fit,80);setTimeout(fit,350);setTimeout(fit,800)},{passive:true});
-  window.visualViewport?.addEventListener('resize',()=>requestAnimationFrame(fit),{passive:true});
-  fit();
+// V171: mobile camera drag only
+(function v171MobileLook(){
+  const canvas=renderer?.domElement;if(!canvas||canvas.dataset.v171Bound)return;canvas.dataset.v171Bound='1';
+  let id=null,lx=0,ly=0;
+  canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||!started||isCutsceneInputLocked())return;const el=document.elementFromPoint(e.clientX,e.clientY);if(el?.closest?.('#mobileControls,#v168Chat,#chatPanel,#hud,#startOverlay,#signupGate'))return;id=e.pointerId;lx=e.clientX;ly=e.clientY;try{canvas.setPointerCapture(id)}catch(_){}e.preventDefault()},{passive:false});
+  canvas.addEventListener('pointermove',e=>{if(e.pointerId!==id||isCutsceneInputLocked())return;const dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;yaw-=dx*.0062;pitch=Math.max(-1.35,Math.min(1.35,pitch+dy*.0055));if(shiftLock)targetPlayerYaw=yaw;e.preventDefault()},{passive:false});
+  const end=e=>{if(e.pointerId===id)id=null};canvas.addEventListener('pointerup',end,{passive:true});canvas.addEventListener('pointercancel',end,{passive:true});
 })();
