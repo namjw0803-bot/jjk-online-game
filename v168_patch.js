@@ -36,3 +36,36 @@ document.addEventListener('keydown',e=>{if(e.repeat||e.target===v168Input)return
 
 function v168Resize(){try{const vv=window.visualViewport;const w=Math.max(1,Math.round(vv?.width||window.innerWidth));const h=Math.max(1,Math.round(vv?.height||window.innerHeight));renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,V168_IOS?1.35:1.6));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}catch(_){}}
 window.addEventListener('resize',v168Resize,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(v168Resize,300),{passive:true});window.visualViewport?.addEventListener('resize',v168Resize,{passive:true});setTimeout(v168Resize,80);
+
+
+// V170: bind actual mobile gameplay controls (base HTML had controls but no handlers)
+(function v170BindMobileControls(){
+  const joy=document.getElementById('joyBase'), knob=document.getElementById('joyKnob');
+  if(!joy||joy.dataset.v170Bound)return;
+  joy.dataset.v170Bound='1';
+  let joyPointer=null;
+  function resetJoy(){joyPointer=null;if(knob){knob.style.transform='translate(0px,0px)'};try{keys['w']=keys['a']=keys['s']=keys['d']=false}catch(_){}}
+  function moveJoy(e){
+    if(joyPointer!==null&&e.pointerId!==joyPointer)return;
+    const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    let dx=e.clientX-cx,dy=e.clientY-cy;const lim=Math.max(28,r.width*.32),len=Math.hypot(dx,dy)||1;
+    if(len>lim){dx=dx/len*lim;dy=dy/len*lim}
+    if(knob)knob.style.transform='translate('+dx+'px,'+dy+'px)';
+    const nx=dx/lim,ny=dy/lim,dead=.18;
+    try{keys['a']=nx<-dead;keys['d']=nx>dead;keys['w']=ny<-dead;keys['s']=ny>dead}catch(_){}
+  }
+  joy.addEventListener('pointerdown',e=>{if(!started||isCutsceneInputLocked())return;e.preventDefault();e.stopPropagation();joyPointer=e.pointerId;try{joy.setPointerCapture(e.pointerId)}catch(_){}moveJoy(e)},{passive:false});
+  joy.addEventListener('pointermove',e=>{if(joyPointer===e.pointerId){e.preventDefault();moveJoy(e)}},{passive:false});
+  joy.addEventListener('pointerup',e=>{if(joyPointer===e.pointerId){e.preventDefault();resetJoy()}},{passive:false});
+  joy.addEventListener('pointercancel',resetJoy,{passive:false});
+
+  function bindBtn(id,down,up){const b=document.getElementById(id);if(!b||b.dataset.v170Bound)return;b.dataset.v170Bound='1';b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(!started||isCutsceneInputLocked())return;down?.()},{passive:false});if(up){const end=e=>{e.preventDefault();up()};b.addEventListener('pointerup',end,{passive:false});b.addEventListener('pointercancel',end,{passive:false})}}
+  bindBtn('mbJump',()=>{try{if(onGround){vy=7.4;onGround=false;jumpCount=1}else if(jumpCount<2){vy=6.7;jumpCount++}}catch(_){}});
+  bindBtn('mbDash',()=>{try{dashT=Math.max(dashT,.22)}catch(_){}});
+  bindBtn('mbShift',()=>{try{shiftLock=!shiftLock;if(shiftLock)targetPlayerYaw=yaw;document.getElementById('shiftLockBadge')?.classList.toggle('on',shiftLock)}catch(_){}});
+  bindBtn('mbZ',()=>{try{startSkill('z')}catch(_){}},()=>{try{if(kind==='GOJO'&&chargingBlue)releaseBlue()}catch(_){}});
+  bindBtn('mbX',()=>{try{startSkill('x')}catch(_){}});
+  bindBtn('mbC',()=>{try{startSkill('c')}catch(_){}});
+  let vLast=0,vTimer=null;
+  bindBtn('mbV',()=>{try{const now=performance.now();if(now-vLast<=300){if(vTimer)clearTimeout(vTimer);vTimer=null;vLast=0;makeMiniVoid02()}else{vLast=now;vTimer=setTimeout(()=>{vTimer=null;vLast=0;startSkill('v')},305)}}catch(_){}});
+})();
