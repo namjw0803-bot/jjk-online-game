@@ -71,18 +71,28 @@ window.addEventListener('resize',v168Resize,{passive:true});window.addEventListe
 })();
 
 
-// V172: mobile look on the control overlay (canvas cannot receive touches through #mobileControls)
-(function v172MobileLook(){
- const layer=document.getElementById('mobileControls'); if(!layer||layer.dataset.lookBound)return; layer.dataset.lookBound='1';
- let id=null,lx=0,ly=0;
- layer.addEventListener('pointerdown',e=>{
-   if(!started||isCutsceneInputLocked()||e.target.closest('#joyBase,.mobileBtn'))return;
-   id=e.pointerId;lx=e.clientX;ly=e.clientY;e.preventDefault();
- },{passive:false});
- layer.addEventListener('pointermove',e=>{
-   if(e.pointerId!==id||isCutsceneInputLocked())return;
-   const dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;
-   yaw-=dx*.0062;pitch=Math.max(-1.35,Math.min(1.35,pitch+dy*.0055));if(shiftLock)targetPlayerYaw=yaw;e.preventDefault();
- },{passive:false});
- const end=e=>{if(e.pointerId===id)id=null};layer.addEventListener('pointerup',end,{passive:true});layer.addEventListener('pointercancel',end,{passive:true});
+// V174: rebuilt mobile camera look from scratch using document-level touch tracking
+(function v174MobileCamera(){
+ if(document.documentElement.dataset.v174Camera)return;document.documentElement.dataset.v174Camera='1';
+ let lookTouch=null,lx=0,ly=0;
+ function blockedTarget(t){return !!t?.closest?.('#joyBase,.mobileBtn,#v168Chat,#chatPanel,#hud,#startOverlay,#signupGate,input,button')}
+ document.addEventListener('touchstart',e=>{
+   if(!started||isCutsceneInputLocked())return;
+   for(const t of e.changedTouches){
+     const target=document.elementFromPoint(t.clientX,t.clientY);
+     if(blockedTarget(target))continue;
+     // right half is camera zone; left half remains free for movement joystick
+     if(t.clientX<window.innerWidth*.42)continue;
+     lookTouch=t.identifier;lx=t.clientX;ly=t.clientY;e.preventDefault();break;
+   }
+ },{passive:false,capture:true});
+ document.addEventListener('touchmove',e=>{
+   if(lookTouch===null||isCutsceneInputLocked())return;
+   let t=null;for(const q of e.touches){if(q.identifier===lookTouch){t=q;break}}if(!t)return;
+   const dx=t.clientX-lx,dy=t.clientY-ly;lx=t.clientX;ly=t.clientY;
+   yaw-=dx*.0065;pitch=Math.max(-1.35,Math.min(1.35,pitch+dy*.0058));
+   if(shiftLock)targetPlayerYaw=yaw;e.preventDefault();
+ },{passive:false,capture:true});
+ function end(e){if(lookTouch===null)return;for(const t of e.changedTouches){if(t.identifier===lookTouch){lookTouch=null;break}}}
+ document.addEventListener('touchend',end,{passive:true,capture:true});document.addEventListener('touchcancel',end,{passive:true,capture:true});
 })();
