@@ -71,11 +71,18 @@ window.addEventListener('resize',v168Resize,{passive:true});window.addEventListe
 })();
 
 
-// V171: mobile camera drag only
-(function v171MobileLook(){
-  const canvas=renderer?.domElement;if(!canvas||canvas.dataset.v171Bound)return;canvas.dataset.v171Bound='1';
-  let id=null,lx=0,ly=0;
-  canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||!started||isCutsceneInputLocked())return;const el=document.elementFromPoint(e.clientX,e.clientY);if(el?.closest?.('#mobileControls,#v168Chat,#chatPanel,#hud,#startOverlay,#signupGate'))return;id=e.pointerId;lx=e.clientX;ly=e.clientY;try{canvas.setPointerCapture(id)}catch(_){}e.preventDefault()},{passive:false});
-  canvas.addEventListener('pointermove',e=>{if(e.pointerId!==id||isCutsceneInputLocked())return;const dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;yaw-=dx*.0062;pitch=Math.max(-1.35,Math.min(1.35,pitch+dy*.0055));if(shiftLock)targetPlayerYaw=yaw;e.preventDefault()},{passive:false});
-  const end=e=>{if(e.pointerId===id)id=null};canvas.addEventListener('pointerup',end,{passive:true});canvas.addEventListener('pointercancel',end,{passive:true});
+// V172: mobile look on the control overlay (canvas cannot receive touches through #mobileControls)
+(function v172MobileLook(){
+ const layer=document.getElementById('mobileControls'); if(!layer||layer.dataset.lookBound)return; layer.dataset.lookBound='1';
+ let id=null,lx=0,ly=0;
+ layer.addEventListener('pointerdown',e=>{
+   if(!started||isCutsceneInputLocked()||e.target.closest('#joyBase,.mobileBtn'))return;
+   id=e.pointerId;lx=e.clientX;ly=e.clientY;e.preventDefault();
+ },{passive:false});
+ layer.addEventListener('pointermove',e=>{
+   if(e.pointerId!==id||isCutsceneInputLocked())return;
+   const dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;
+   yaw-=dx*.0062;pitch=Math.max(-1.35,Math.min(1.35,pitch+dy*.0055));if(shiftLock)targetPlayerYaw=yaw;e.preventDefault();
+ },{passive:false});
+ const end=e=>{if(e.pointerId===id)id=null};layer.addEventListener('pointerup',end,{passive:true});layer.addEventListener('pointercancel',end,{passive:true});
 })();
